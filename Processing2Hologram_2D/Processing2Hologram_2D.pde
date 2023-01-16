@@ -31,12 +31,14 @@ public class PQuilt{
   }
   
   public boolean saveQuilt(String filename){
+    //save a quilt image in a Looking Glass format (with suffix)
     this.img.save(filename+"qs"+this.col+"x"+this.row+"a"+Float.toString(this.ar));
     return true;
   }
   
 }
 
+//combine multiple images into a quilt image that can be accepted by Looking Glass Studio
 PQuilt quiltCombination(ArrayList<PGraphics> quiltArray,int resX, int resY){
   //quiltArray is an array that contains all the images in the PGraphics format required to generate a quilt
   PGraphics outputQuilt;
@@ -85,4 +87,13 @@ PQuilt quiltCombination(ArrayList<PGraphics> quiltArray,int resX, int resY){
   }
   outputQuilt.endDraw();
   return new PQuilt(outputQuilt,col,row,asp);
+}
+
+PGraphics quiltMapping(PGraphics inputImg, int view, int totalViewNum){
+  
+}
+
+
+ArrayList<PGraphics> quiltDefaultRender(){
+  
 }
