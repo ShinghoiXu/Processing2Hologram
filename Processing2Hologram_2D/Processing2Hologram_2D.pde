@@ -1,99 +1,37 @@
-void setup(){
+import grainy.graphics.*;
 
+PGraphics canv;
+PQuilt myQuilt;
+ArrayList<PGraphics> testArr;
+
+GrainyPainter myGP;
+
+void setup(){
+  size(1080,1920);
+  canv = createGraphics(1080,1920);
+  myGP = new GrainyPainter(canv);
+  testArr = new ArrayList<PGraphics>();
+  
+  canv.beginDraw();
+  canv.stroke(255);
+  canv.strokeWeight(2);
+  //canv.stroke(#72ABE3);
+  canv.endDraw();
+  myGP.setPaintingMode(3);
+  
+  for(int j = 1 ; j <= 3; j++){
+    canv.clear();
+    for(int i = 1 ; i <= 3; i++){
+      myGP.grainyCircle(canv.width/2,canv.height/2,300);
+      image(canv,0,0);
+    }
+    testArr.add(canv);
+  }
+  
+  quiltDefaultRender(testArr, 1).saveQuilt("testCircle");
+  exit();
 }
 
 void draw(){
-
-}
-
-public class PQuilt{
-  private PGraphics img;
-  private int col,row;
-  private float ar;
-  
-  public PQuilt(PGraphics quiltImg, int col, int row, float aspectRatio) {
-    this.img = quiltImg;
-    this.col = col;
-    this.row = row;
-    this.ar = aspectRatio;
-  }
-  
-  public int getColNum(){
-    return this.col;
-  }
-  
-  public int getRowNum(){
-    return this.row;
-  }
-  
-  public float getAR(){
-    return this.ar;
-  }
-  
-  public boolean saveQuilt(String filename){
-    //save a quilt image in a Looking Glass format (with suffix)
-    this.img.save(filename+"qs"+this.col+"x"+this.row+"a"+Float.toString(this.ar));
-    return true;
-  }
-  
-}
-
-//combine multiple images into a quilt image that can be accepted by Looking Glass Studio
-PQuilt quiltCombination(ArrayList<PGraphics> quiltArray,int resX, int resY){
-  //quiltArray is an array that contains all the images in the PGraphics format required to generate a quilt
-  PGraphics outputQuilt;
-  float asp = 0.75f;
-  int col,row;
-  col = 1; row = 1;
-  switch(quiltArray.size()){
-    case 0:
-      //empty array
-      throw new NullPointerException("Quilt Array is Empty!");
-    case 45:
-      //Looking Glass 16" & 32"
-      col = 5;
-      row = 9;
-      break;
-    case 48:
-      //Looking Glass Portrait
-      col = 8;
-      row = 6;
-      break;
-    case 72:
-      //Looking Glass 65"
-      col = 8;
-      row = 9;
-      break;
-    default:
-      int n = quiltArray.size();
-      for (int i = 1; i <= sqrt(n); i++) {
-            while (n % i == 0) {
-                col = i;
-            }
-      }
-      row = int(n / col);
-      break;
-  }
-  asp = quiltArray.get(0).width / quiltArray.get(0).height;
-  float imgX = resX / col;
-  float imgY = resY / row;
-  outputQuilt = createGraphics(resX,resY);
-  outputQuilt.beginDraw();
-  //outputQuilt.background(0);
-  for(int i = 1; i <= row; i++){
-    for(int j = 1; j <= col; j++){
-      outputQuilt.image(quiltArray.get((i-1)*col+j-1),(j-1)*imgX,(row-i)*imgY,imgX,imgY);
-    }
-  }
-  outputQuilt.endDraw();
-  return new PQuilt(outputQuilt,col,row,asp);
-}
-
-PGraphics quiltMapping(PGraphics inputImg, int view, int totalViewNum){
-  
-}
-
-
-ArrayList<PGraphics> quiltDefaultRender(){
   
 }
