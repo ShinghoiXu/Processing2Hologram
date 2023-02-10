@@ -1,0 +1,43 @@
+{
+ "configVersion": "1.0",
+ "serial": "LKG-PORT-05935",
+ "pitch": {
+  "value": 52.56046553048362
+ },
+ "slope": {
+  "value": -7.1423088016812
+ },
+ "center": {
+  "value": 0.47345216539737284
+ },
+ "fringe": {
+  "value": 0.0
+ },
+ "viewCone": {
+  "value": 40.0
+ },
+ "invView": {
+  "value": 1
+ },
+ "verticalAngle": {
+  "value": 0
+ },
+ "DPI": {
+  "value": 324.0
+ },
+ "screenW": {
+  "value": 1536.0
+ },
+ "screenH": {
+  "value": 2048.0
+ },
+ "flipImageX": {
+  "value": 0
+ },
+ "flipImageY": {
+  "value": 0
+ },
+ "flipSubp": {
+  "value": 0.0
+ }
+}

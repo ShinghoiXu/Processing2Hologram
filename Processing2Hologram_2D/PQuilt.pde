@@ -99,11 +99,10 @@ PQuilt quiltDefaultRender(ArrayList<PGraphics> series, int focalPlane){
     perspective.blendMode(BLEND);
     //perspective.clear();
     perspective.background(0);
-    float gap = perspective.width / (layerNum - 1);
+    float gap = perspective.width * 1.2 / (layerNum - 1);
     for(int i = layerNum - 1; i >= 0; i--){
       float distance = (i-focalPlane) * gap;
       float offsetX = distance * sin(radians(viewAngle)) / sin(radians(90-viewAngle));
-      println(offsetX);
       perspective.image(series.get(i),perspective.width/2+offsetX,perspective.height/2);
     }
     perspective.endDraw();
