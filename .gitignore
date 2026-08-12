@@ -1,0 +1,7 @@
+/build/
+/.gradle/
+/.idea/
+/.vscode/
+*.iml
+*.log
+hs_err_pid*.log
