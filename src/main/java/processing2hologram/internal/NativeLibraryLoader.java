@@ -12,10 +12,22 @@ final class NativeLibraryLoader {
 
   private NativeLibraryLoader() {}
 
+  static boolean isSupportedPlatform() {
+    String os = System.getProperty("os.name", "").toLowerCase();
+    String architecture = System.getProperty("os.arch", "").toLowerCase();
+    boolean supportedArchitecture = architecture.equals("amd64")
+        || architecture.equals("x86_64") || architecture.equals("aarch64")
+        || architecture.equals("arm64");
+    boolean windowsX64 = os.contains("win")
+        && (architecture.equals("amd64") || architecture.equals("x86_64"));
+    return windowsX64 || (os.contains("mac") && supportedArchitecture);
+  }
+
   static synchronized void load() {
     if (loaded) return;
-    if (!System.getProperty("os.name", "").toLowerCase().contains("win")) {
-      throw new UnsupportedOperationException("Processing2Hologram currently supports Windows only");
+    if (!isSupportedPlatform()) {
+      throw new UnsupportedOperationException(
+          "Looking Glass live output requires Windows x64 or macOS; quilt preview is available");
     }
 
     String override = System.getProperty("processing2hologram.native");
@@ -25,14 +37,18 @@ final class NativeLibraryLoader {
       return;
     }
 
-    String resource = "/native/windows-amd64/processing2hologram.dll";
+    boolean macOS = System.getProperty("os.name", "").toLowerCase().contains("mac");
+    String resource = macOS
+        ? "/native/macos-universal/libprocessing2hologram.dylib"
+        : "/native/windows-amd64/processing2hologram.dll";
     try (InputStream input = NativeLibraryLoader.class.getResourceAsStream(resource)) {
       if (input == null) {
         // Useful while developing from unpacked classes and for standard Processing native layouts.
         System.loadLibrary("processing2hologram");
       } else {
         Path directory = Files.createTempDirectory("processing2hologram-native-");
-        Path library = directory.resolve("processing2hologram.dll");
+        Path library = directory.resolve(macOS
+            ? "libprocessing2hologram.dylib" : "processing2hologram.dll");
         Files.copy(input, library, StandardCopyOption.REPLACE_EXISTING);
         library.toFile().deleteOnExit();
         directory.toFile().deleteOnExit();
@@ -45,4 +61,3 @@ final class NativeLibraryLoader {
     }
   }
 }
-

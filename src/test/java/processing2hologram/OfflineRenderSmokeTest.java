@@ -42,14 +42,16 @@ public final class OfflineRenderSmokeTest extends PApplet {
       check(containsCubeColor(hologram.preview()), "Center preview does not contain the cube");
 
       hologram.quilt().loadPixels();
-      int coloredTileCenters = coloredTileCenters(hologram.quilt(), hologram.quiltSettings());
-      check(coloredTileCenters == hologram.quiltSettings().viewCount(),
-          "Only " + coloredTileCenters + " quilt tiles contain the cube at their center");
+      int coloredTiles = coloredTiles(hologram.quilt(), hologram.quiltSettings());
+      check(coloredTiles == hologram.quiltSettings().viewCount(),
+          "Only " + coloredTiles + " quilt tiles contain the cube");
 
       PGraphicsOpenGL quilt = (PGraphicsOpenGL) hologram.quilt();
       Texture texture = quilt.getTexture();
       check(texture != null && texture.available(), "Quilt OpenGL texture is unavailable");
       check(texture.glFormat == 0x1908, "Bridge expects an RGBA quilt texture");
+      check(texture.width == quilt.pixelWidth && texture.height == quilt.pixelHeight,
+          "Bridge texture dimensions must use physical pixels on high-density displays");
       quilt.beginPGL();
       quilt.endPGL();
 
@@ -85,17 +87,29 @@ public final class OfflineRenderSmokeTest extends PApplet {
     return false;
   }
 
-  private static int coloredTileCenters(PGraphics graphics, QuiltSettings settings) {
+  private static int coloredTiles(PGraphics graphics, QuiltSettings settings) {
     int count = 0;
+    int density = graphics.pixelWidth / graphics.width;
+    int tileWidth = settings.viewWidth() * density;
+    int tileHeight = settings.viewHeight() * density;
     for (int row = 0; row < settings.rows(); row++) {
       for (int column = 0; column < settings.columns(); column++) {
-        int x = column * settings.viewWidth() + settings.viewWidth() / 2;
-        int y = row * settings.viewHeight() + settings.viewHeight() / 2;
-        int pixel = graphics.pixels[y * graphics.width + x];
-        int red = pixel >> 16 & 0xff;
-        int green = pixel >> 8 & 0xff;
-        int blue = pixel & 0xff;
-        if (blue > 80 && green > red + 20) count++;
+        boolean colored = false;
+        int firstX = column * tileWidth;
+        int firstY = row * tileHeight;
+        for (int y = firstY; y < firstY + tileHeight && !colored; y += 4 * density) {
+          for (int x = firstX; x < firstX + tileWidth; x += 4 * density) {
+            int pixel = graphics.pixels[y * graphics.pixelWidth + x];
+            int red = pixel >> 16 & 0xff;
+            int green = pixel >> 8 & 0xff;
+            int blue = pixel & 0xff;
+            if (blue > 80 && green > red + 20) {
+              colored = true;
+              break;
+            }
+          }
+        }
+        if (colored) count++;
       }
     }
     return count;

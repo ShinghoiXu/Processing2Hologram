@@ -5,13 +5,17 @@ public final class NativeBridge implements AutoCloseable {
   private long session;
 
   public NativeBridge(String applicationName, long displayIndex) {
-    NativeLibraryLoader.load();
     if (Boolean.getBoolean("processing2hologram.offline")) {
       throw new IllegalStateException("Offline mode was explicitly requested");
     }
+    if (!isSupportedPlatform()) {
+      throw new UnsupportedOperationException(
+          "Looking Glass live output requires Windows x64 or macOS; quilt preview is available");
+    }
+    NativeLibraryLoader.load();
     if (!isDisplayConnected() && !Boolean.getBoolean("processing2hologram.forceBridge")) {
       throw new IllegalStateException(
-          "Windows does not currently report a connected Looking Glass display");
+          "Looking Glass Bridge does not currently report a connected display");
     }
     session = open(applicationName, displayIndex);
     if (session == 0L) {
@@ -19,10 +23,16 @@ public final class NativeBridge implements AutoCloseable {
     }
   }
 
-  /** Safe preflight that does not initialize the Looking Glass Bridge SDK. */
+  /** Checks whether Looking Glass Bridge currently reports an attached display. */
   public static boolean isDisplayConnected() {
+    if (!isSupportedPlatform()) return false;
     NativeLibraryLoader.load();
     return isLookingGlassDisplayConnected();
+  }
+
+  /** Reports whether this distribution contains a live-output backend for the current platform. */
+  public static boolean isSupportedPlatform() {
+    return NativeLibraryLoader.isSupportedPlatform();
   }
 
   public int[] quiltSettings() {

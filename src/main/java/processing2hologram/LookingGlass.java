@@ -16,7 +16,7 @@ import processing2hologram.internal.BridgeConnection;
  * {@link #render(SceneRenderer)}. The callback is repeated for every horizontal view.</p>
  */
 public final class LookingGlass implements AutoCloseable {
-  public static final String VERSION = "0.1.1";
+  public static final String VERSION = "0.1.2";
   public static final long FIRST_DISPLAY = 0xffff_ffffL;
 
   private static final float PORTRAIT_VIEW_CONE_DEGREES = 40f;
@@ -184,7 +184,9 @@ public final class LookingGlass implements AutoCloseable {
     }
     primaryGraphics.beginPGL();
     try {
-      bridge.saveTexture(filename, Integer.toUnsignedLong(texture.glName), texture.glFormat);
+      bridge.saveTexture(
+          filename, Integer.toUnsignedLong(texture.glName), texture.glFormat,
+          texture.width, texture.height);
     } finally {
       primaryGraphics.endPGL();
     }
@@ -245,7 +247,9 @@ public final class LookingGlass implements AutoCloseable {
       // Keep the Processing OpenGL context current while Bridge registers/draws the shared texture.
       primaryGraphics.beginPGL();
       try {
-        bridge.present(Integer.toUnsignedLong(texture.glName), texture.glFormat, zoom);
+        bridge.present(
+            Integer.toUnsignedLong(texture.glName), texture.glFormat,
+            texture.width, texture.height, zoom);
       } finally {
         primaryGraphics.endPGL();
       }

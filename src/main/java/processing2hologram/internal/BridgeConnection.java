@@ -46,17 +46,29 @@ public final class BridgeConnection implements AutoCloseable {
     return maxTextureSize;
   }
 
-  public void present(long textureName, int pixelFormat, float zoom) {
+  public void present(
+      long textureName, int pixelFormat, int textureWidth, int textureHeight, float zoom) {
+    validateTextureSize(textureWidth, textureHeight);
     bridge.present(
         textureName, pixelFormat,
-        quiltSettings.width(), quiltSettings.height(),
+        textureWidth, textureHeight,
         quiltSettings.columns(), quiltSettings.rows(),
         quiltSettings.viewAspect(), zoom);
   }
 
-  public void saveTexture(String filename, long textureName, int pixelFormat) {
+  public void saveTexture(
+      String filename, long textureName, int pixelFormat, int textureWidth, int textureHeight) {
+    validateTextureSize(textureWidth, textureHeight);
     bridge.saveTexture(
-        filename, textureName, pixelFormat, quiltSettings.width(), quiltSettings.height());
+        filename, textureName, pixelFormat, textureWidth, textureHeight);
+  }
+
+  private void validateTextureSize(int width, int height) {
+    if (width <= 0 || height <= 0 || width > maxTextureSize || height > maxTextureSize) {
+      throw new IllegalStateException(
+          "The quilt texture " + width + "x" + height
+              + " exceeds Bridge's maximum texture size " + maxTextureSize);
+    }
   }
 
   @Override

@@ -1,5 +1,6 @@
 param(
   [string]$ProcessingHome = 'C:\Program Files\Processing',
+  [string]$MacNative = '',
   [switch]$SkipNative,
   [switch]$SkipTests,
   [switch]$RunGraphicsTest
@@ -26,7 +27,8 @@ $ClassDirectory = Join-Path $BuildRoot 'classes'
 $TestClassDirectory = Join-Path $BuildRoot 'test-classes'
 $ResourceDirectory = Join-Path $BuildRoot 'resources'
 $NativeBuildDirectory = Join-Path $BuildRoot 'native-windows'
-$DistributionRoot = Join-Path $BuildRoot 'Processing2Hologram'
+$ReleaseKind = if ($MacNative) { 'universal' } else { 'windows' }
+$DistributionRoot = Join-Path (Join-Path (Join-Path $BuildRoot 'releases') $ReleaseKind) 'Processing2Hologram'
 $DistributionLibrary = Join-Path $DistributionRoot 'library'
 $DistributionExamples = Join-Path $DistributionRoot 'examples'
 $LibraryJar = Join-Path $DistributionLibrary 'Processing2Hologram.jar'
@@ -34,6 +36,9 @@ $LibraryJar = Join-Path $DistributionLibrary 'Processing2Hologram.jar'
 $ExpectedBuildRoot = [System.IO.Path]::GetFullPath((Join-Path $ProjectRoot 'build'))
 if ([System.IO.Path]::GetFullPath($BuildRoot) -ne $ExpectedBuildRoot) {
   throw "Refusing to clean unexpected build directory: $BuildRoot"
+}
+if ($MacNative -and -not (Test-Path -LiteralPath $MacNative -PathType Leaf)) {
+  throw "macOS native library was not found: $MacNative"
 }
 foreach ($Directory in @($ClassDirectory, $TestClassDirectory, $ResourceDirectory, $DistributionRoot)) {
   if (Test-Path -LiteralPath $Directory) {
@@ -58,6 +63,12 @@ if (-not (Test-Path -LiteralPath $NativeOutput)) {
 $NativeResourceDirectory = Join-Path $ResourceDirectory 'native\windows-amd64'
 New-Item -ItemType Directory -Force -Path $NativeResourceDirectory | Out-Null
 Copy-Item -LiteralPath $NativeOutput -Destination $NativeResourceDirectory -Force
+if ($MacNative) {
+  $MacResourceDirectory = Join-Path $ResourceDirectory 'native\macos-universal'
+  New-Item -ItemType Directory -Force -Path $MacResourceDirectory | Out-Null
+  Copy-Item -LiteralPath $MacNative `
+    -Destination (Join-Path $MacResourceDirectory 'libprocessing2hologram.dylib') -Force
+}
 
 $MainSources = Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'src\main\java') -Filter '*.java' -Recurse |
   Select-Object -ExpandProperty FullName
@@ -92,4 +103,4 @@ if ($RunGraphicsTest) {
   if ($LASTEXITCODE -ne 0) { throw 'Offline Processing OpenGL test failed' }
 }
 
-Write-Host "Built Processing library: $DistributionRoot"
+Write-Host "Built $ReleaseKind Processing library: $DistributionRoot"

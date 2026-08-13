@@ -1,7 +1,14 @@
-/build/
+# Keep compiler output ignored, but version the install-ready Processing
+# packages so a clone can be used without rebuilding native code.
+/build/*
+!/build/releases/
+!/build/releases/**
+/bin/
 /.gradle/
 /.idea/
 /.vscode/
+.DS_Store
+**/.DS_Store
 *.iml
 *.log
 hs_err_pid*.log
