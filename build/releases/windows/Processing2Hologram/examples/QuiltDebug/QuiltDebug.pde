@@ -13,6 +13,7 @@ void draw() {
   background(0);
   image(hologram.quilt(), 0, 0, width, height);
 }
+
 void drawScene(PGraphics pg) {
   pg.background(10);
   pg.lights();

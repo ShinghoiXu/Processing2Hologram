@@ -23,4 +23,3 @@ void drawScene(PGraphics pg) {
   pg.box(130);
   pg.popMatrix();
 }
-

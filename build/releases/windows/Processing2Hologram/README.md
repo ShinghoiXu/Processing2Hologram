@@ -1,5 +1,9 @@
 # Processing2Hologram
 
+[![Release](https://img.shields.io/github/v/release/ShinghoiXu/Processing2Hologram)](https://github.com/ShinghoiXu/Processing2Hologram/releases)
+[![Processing 4](https://img.shields.io/badge/Processing-4-0468FF)](https://processing.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Processing2Hologram is a Processing 4 library for showing `P3D` scenes on
 Looking Glass displays. Draw a scene with familiar Processing commands; the
 library renders the required views, assembles the quilt, and sends it to Looking
@@ -9,6 +13,17 @@ If no display is connected, the same sketch still runs with a normal center-view
 preview and a full quilt preview. The first validated hardware target is Looking
 Glass Portrait, while connected devices use the quilt layout and view cone
 reported by Bridge rather than Portrait-specific values.
+
+Created and maintained by [Chengkai Xu](https://chengkaixu.art).
+
+## Highlights
+
+- Write scenes with standard Processing `PGraphics`, lights, shapes, materials,
+  textures, and transforms.
+- Render a calibrated multiview quilt from one center-camera configuration.
+- Present directly through Looking Glass Bridge on Windows and macOS.
+- Keep developing without hardware using center-view and full-quilt previews.
+- Adapt automatically to the connected display's quilt layout and view cone.
 
 ## Requirements
 
@@ -20,11 +35,18 @@ reported by Bridge rather than Portrait-specific values.
 
 ## Install
 
-Prebuilt packages are checked into `build/releases`. Open the directory for your
-operating system, then copy the complete `Processing2Hologram` directory into
-your Processing Sketchbook's `libraries` directory. For example, macOS users can
-install `build/releases/macos/Processing2Hologram` directly after cloning or
-downloading this repository—no compiler is required.
+Prebuilt packages are checked into [`build/releases`](https://github.com/ShinghoiXu/Processing2Hologram/tree/main/build/releases). Choose
+one package and copy its complete `Processing2Hologram` directory into your
+Processing Sketchbook's `libraries` directory:
+
+| Package | Use it when |
+| --- | --- |
+| `build/releases/macos/Processing2Hologram` | Running Processing on macOS |
+| `build/releases/windows/Processing2Hologram` | Running Processing on Windows x64 |
+| `build/releases/universal/Processing2Hologram` | Sharing one installation between macOS and Windows |
+
+The package already contains the library JAR, native Bridge adapter, metadata,
+documentation, and examples; no compiler is required.
 
 Restart Processing after installing or replacing the library.
 
@@ -32,14 +54,39 @@ To build an installable copy from this repository, see
 [Hacking on the library](#hacking-on-the-library). Install the complete
 `Processing2Hologram` directory from the platform-specific release output.
 
-After restarting Processing, open:
+After restarting Processing, open either bundled example from:
 
 ```text
 File > Examples > Contributed Libraries > Processing2Hologram > Cube
+File > Examples > Contributed Libraries > Processing2Hologram > Flocking
 ```
 
 Make sure Looking Glass Bridge is running before starting the sketch if you want
 live output on a display.
+
+## Examples
+
+### Cube
+
+[`examples/Cube`](examples/Cube) is the smallest complete starting point. It
+renders a rotating box, configures holographic depth, fits the window to the
+active preview aspect ratio, and displays Bridge connection status.
+
+Use it when learning the core `render()` callback and center-camera workflow.
+
+### Flocking
+
+[`examples/Flocking`](examples/Flocking) is a more complete interactive sketch.
+It renders 128 simulated boids in 3D while keeping simulation updates outside
+the per-view drawing callback. Move the mouse to attract the flock, hold the
+mouse button to repel it, press `Space` to pause or resume, and press `R` to
+reset. Its camera remains fixed so pointer interaction does not shift the view.
+Boids are recycled one-for-one only after fully leaving the camera frustum;
+replacements fly in from beyond a random edge. Very gentle depth forces favor
+the space between two soft planes around the focal plane.
+
+`QuiltDebug` is also included as a developer utility for displaying the complete
+quilt rather than as a third showcase example.
 
 ## Your first holographic sketch
 

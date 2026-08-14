@@ -2,10 +2,17 @@ import processing2hologram.*;
 
 final int BOID_COUNT = 128;
 
-final float BOUNDS_X = 270;
-final float BOUNDS_Y = 350;
-final float BOUNDS_Z = 300;
 final float CAMERA_FOV = 42;
+final float CAMERA_NEAR_CLIP = 1;
+final float CAMERA_FAR_CLIP = 4000;
+
+final float DEPTH_PLANE_DISTANCE = 300;
+final float DEPTH_REPULSION_ZONE = 60;
+final float DEPTH_ATTRACTION = 0.0011;
+final float DEPTH_REPULSION = 0.005;
+final float DEPTH_DAMPING = 0.0006;
+final float BOID_VISUAL_RADIUS = 24;
+final float SPAWN_OUTSIDE_PADDING = 18;
 
 final float DESIRED_SEPARATION = 32;
 final float NEIGHBOR_DISTANCE = 76;
@@ -17,13 +24,15 @@ Boid[] flock = new Boid[BOID_COUNT];
 int lastFrameMillis;
 int lastPointerMillis = -10000;
 float simulationTime;
-float lookX;
-float lookY;
 boolean paused;
 
-PVector cameraEye = new PVector();
-PVector cameraTarget = new PVector();
+PVector cameraEye = new PVector(0, -35, 875);
+PVector cameraTarget = new PVector(0, 0, 0);
+PVector cameraForward = new PVector();
+PVector cameraRight = new PVector();
+PVector cameraUp = new PVector();
 PVector pointerWorld = new PVector();
+float cameraFocusDistance;
 
 void setup() {
   // One Portrait quilt view is 420 x 560. fitWindowToPreview() adapts this
@@ -34,9 +43,14 @@ void setup() {
   hologram = new LookingGlass(this);
   hologram.camera()
       .fov(CAMERA_FOV)
-      .clip(1, 4000)
-      .depthScale(1.05);
+      .clip(CAMERA_NEAR_CLIP, CAMERA_FAR_CLIP)
+      .depthScale(1.05)
+      .lookAt(
+          cameraEye.x, cameraEye.y, cameraEye.z,
+          cameraTarget.x, cameraTarget.y, cameraTarget.z
+      );
 
+  updateCameraBasis();
   resetFlock();
   lastFrameMillis = millis();
 }
@@ -54,7 +68,6 @@ void draw() {
     lastPointerMillis = now;
   }
 
-  updateCamera(pointerActive);
   updatePointerWorld();
 
   if (!paused) {
@@ -71,53 +84,29 @@ void draw() {
   drawOverlay(pointerActive);
 }
 
-void updateCamera(boolean pointerActive) {
-  float boundedMouseX = constrain(mouseX, 0, width);
-  float boundedMouseY = constrain(mouseY, 0, height);
-  float targetLookX = pointerActive
-      ? map(boundedMouseX, 0, max(1, width), -42, 42)
-      : 0;
-  float targetLookY = pointerActive
-      ? map(boundedMouseY, 0, max(1, height), -32, 32)
-      : 0;
-  lookX = lerp(lookX, targetLookX, 0.065);
-  lookY = lerp(lookY, targetLookY, 0.065);
+void updateCameraBasis() {
+  cameraForward.set(cameraTarget);
+  cameraForward.sub(cameraEye);
+  cameraFocusDistance = cameraForward.mag();
+  cameraForward.normalize();
 
-  float orbit = simulationTime * 0.08;
-  cameraTarget.set(lookX, lookY, 0);
-  cameraEye.set(
-      sin(orbit) * 90 + lookX * 0.16,
-      -35 + lookY * 0.12,
-      820 + cos(orbit) * 55
-  );
+  cameraRight.set(cameraForward.cross(new PVector(0, 1, 0)));
+  if (cameraRight.magSq() < 0.0001) cameraRight.set(1, 0, 0);
+  cameraRight.normalize();
 
-  hologram.camera().lookAt(
-      cameraEye.x, cameraEye.y, cameraEye.z,
-      cameraTarget.x, cameraTarget.y, cameraTarget.z
-  );
+  cameraUp.set(cameraRight.cross(cameraForward));
+  cameraUp.normalize();
 }
 
-// Convert the mouse position into a point on the camera's focus plane. This
-// keeps interaction aligned with the preview even while the camera drifts.
+// Convert the mouse position into a point on the fixed camera's focus plane.
 void updatePointerWorld() {
-  PVector forward = PVector.sub(cameraTarget, cameraEye);
-  float focusDistance = forward.mag();
-  forward.normalize();
-
-  PVector right = forward.cross(new PVector(0, 1, 0));
-  if (right.magSq() < 0.0001) right.set(1, 0, 0);
-  right.normalize();
-
-  PVector cameraUp = right.cross(forward);
-  cameraUp.normalize();
-
   float nx = map(constrain(mouseX, 0, width), 0, max(1, width), -1, 1);
   float ny = map(constrain(mouseY, 0, height), 0, max(1, height), -1, 1);
-  float halfHeight = tan(radians(CAMERA_FOV * 0.5)) * focusDistance;
+  float halfHeight = tan(radians(CAMERA_FOV * 0.5)) * cameraFocusDistance;
   float halfWidth = halfHeight * hologram.quiltSettings().viewAspect();
 
   pointerWorld.set(cameraTarget);
-  pointerWorld.add(PVector.mult(right, nx * halfWidth));
+  pointerWorld.add(PVector.mult(cameraRight, nx * halfWidth));
   pointerWorld.add(PVector.mult(cameraUp, ny * halfHeight));
 }
 
@@ -203,7 +192,11 @@ void updateFlock(float step, boolean pointerActive) {
     boid.acceleration.y += cos(simulationTime * 0.57 + boid.phase * 1.25) * 0.0030;
     boid.acceleration.z += sin(simulationTime * 0.49 + boid.phase * 2.1) * 0.0030;
 
-    addBoundaryForce(boid);
+    if (!boid.hasEnteredView) {
+      addIngressSteering(boid);
+    }
+
+    addDepthForces(boid);
 
     if (pointerActive) {
       float dx = pointerWorld.x - boid.position.x;
@@ -232,7 +225,15 @@ void updateFlock(float step, boolean pointerActive) {
     boid.position.y += boid.velocity.y * step;
     boid.position.z += boid.velocity.z * step;
 
-    keepRecoverable(boid);
+    boolean fullyOutside = isCompletelyOutsideView(boid);
+    if (!boid.hasEnteredView) {
+      // A recycled boid is allowed to travel in from its off-screen spawn.
+      if (!fullyOutside) boid.hasEnteredView = true;
+    } else if (fullyOutside) {
+      // Destroy exactly one departed boid and replace it just outside a random
+      // edge, aimed roughly at the focal center so it enters without popping.
+      flock[i] = new Boid(true);
+    }
   }
 }
 
@@ -260,49 +261,224 @@ void addSteering(Boid boid, float desiredX, float desiredY, float desiredZ, floa
   boid.acceleration.z += steerZ * weight;
 }
 
-void addBoundaryForce(Boid boid) {
-  float marginX = BOUNDS_X * 0.82;
-  float marginY = BOUNDS_Y * 0.82;
-  float marginZ = BOUNDS_Z * 0.82;
-  float strength = 0.018;
+// Guide recycled boids into a slowly wandering region around screen center.
+// Keeping this correction in the camera's XY plane avoids another depth pull.
+void addIngressSteering(Boid boid) {
+  float fromEyeX = boid.position.x - cameraEye.x;
+  float fromEyeY = boid.position.y - cameraEye.y;
+  float fromEyeZ = boid.position.z - cameraEye.z;
+  float viewX = fromEyeX * cameraRight.x
+      + fromEyeY * cameraRight.y
+      + fromEyeZ * cameraRight.z;
+  float viewY = fromEyeX * cameraUp.x
+      + fromEyeY * cameraUp.y
+      + fromEyeZ * cameraUp.z;
+  float wanderX = boid.ingressOffsetX
+      + sin(simulationTime * 0.71 + boid.phase * 1.3) * 42;
+  float wanderY = boid.ingressOffsetY
+      + cos(simulationTime * 0.63 + boid.phase * 1.7) * 52;
+  float desiredViewX = wanderX - viewX;
+  float desiredViewY = wanderY - viewY;
+  float desiredLength = sqrt(
+      desiredViewX * desiredViewX + desiredViewY * desiredViewY
+  );
+  if (desiredLength < 0.0001) return;
 
-  if (boid.position.x > marginX) {
-    boid.acceleration.x -= (boid.position.x - marginX) / BOUNDS_X * strength;
-  } else if (boid.position.x < -marginX) {
-    boid.acceleration.x += (-marginX - boid.position.x) / BOUNDS_X * strength;
+  float desiredScale = boid.maxSpeed / desiredLength;
+  float velocityViewX = boid.velocity.x * cameraRight.x
+      + boid.velocity.y * cameraRight.y
+      + boid.velocity.z * cameraRight.z;
+  float velocityViewY = boid.velocity.x * cameraUp.x
+      + boid.velocity.y * cameraUp.y
+      + boid.velocity.z * cameraUp.z;
+  float steerX = desiredViewX * desiredScale - velocityViewX;
+  float steerY = desiredViewY * desiredScale - velocityViewY;
+  float steerLength = sqrt(steerX * steerX + steerY * steerY);
+  if (steerLength > boid.maxForce) {
+    float forceScale = boid.maxForce / steerLength;
+    steerX *= forceScale;
+    steerY *= forceScale;
   }
 
-  if (boid.position.y > marginY) {
-    boid.acceleration.y -= (boid.position.y - marginY) / BOUNDS_Y * strength;
-  } else if (boid.position.y < -marginY) {
-    boid.acceleration.y += (-marginY - boid.position.y) / BOUNDS_Y * strength;
-  }
-
-  if (boid.position.z > marginZ) {
-    boid.acceleration.z -= (boid.position.z - marginZ) / BOUNDS_Z * strength;
-  } else if (boid.position.z < -marginZ) {
-    boid.acceleration.z += (-marginZ - boid.position.z) / BOUNDS_Z * strength;
-  }
+  float weight = 0.42;
+  boid.acceleration.x += (cameraRight.x * steerX + cameraUp.x * steerY) * weight;
+  boid.acceleration.y += (cameraRight.y * steerX + cameraUp.y * steerY) * weight;
+  boid.acceleration.z += (cameraRight.z * steerX + cameraUp.z * steerY) * weight;
 }
 
-// A large frame hitch cannot strand a boid forever outside the soft boundary.
-void keepRecoverable(Boid boid) {
-  float outerX = BOUNDS_X * 1.35;
-  float outerY = BOUNDS_Y * 1.35;
-  float outerZ = BOUNDS_Z * 1.35;
+// A very weak spring and damping gently favor the focal plane. Two soft walls
+// add a small quadratic repulsion near the front and back depth limits.
+void addDepthForces(Boid boid) {
+  float fromFocusX = boid.position.x - cameraTarget.x;
+  float fromFocusY = boid.position.y - cameraTarget.y;
+  float fromFocusZ = boid.position.z - cameraTarget.z;
+  float depthOffset = fromFocusX * cameraForward.x
+      + fromFocusY * cameraForward.y
+      + fromFocusZ * cameraForward.z;
+  float depthVelocity = boid.velocity.x * cameraForward.x
+      + boid.velocity.y * cameraForward.y
+      + boid.velocity.z * cameraForward.z;
 
-  if (abs(boid.position.x) > outerX) {
-    boid.position.x = constrain(boid.position.x, -outerX, outerX);
-    boid.velocity.x *= -0.55;
+  float depthForce = -depthOffset / DEPTH_PLANE_DISTANCE * DEPTH_ATTRACTION;
+  depthForce -= depthVelocity * DEPTH_DAMPING;
+
+  float repulsionStart = DEPTH_PLANE_DISTANCE - DEPTH_REPULSION_ZONE;
+  float distanceFromCenter = abs(depthOffset);
+  if (distanceFromCenter > repulsionStart) {
+    float penetration = constrain(
+        (distanceFromCenter - repulsionStart) / DEPTH_REPULSION_ZONE,
+        0,
+        2
+    );
+    float directionToCenter = depthOffset < 0 ? 1 : -1;
+    depthForce += directionToCenter * penetration * penetration * DEPTH_REPULSION;
   }
-  if (abs(boid.position.y) > outerY) {
-    boid.position.y = constrain(boid.position.y, -outerY, outerY);
-    boid.velocity.y *= -0.55;
+
+  boid.acceleration.x += cameraForward.x * depthForce;
+  boid.acceleration.y += cameraForward.y * depthForce;
+  boid.acceleration.z += cameraForward.z * depthForce;
+}
+
+// Use the fixed center camera's actual view frustum. The visual-radius margin
+// means recycling only happens after the entire wireframe has left the view.
+boolean isCompletelyOutsideView(Boid boid) {
+  float fromEyeX = boid.position.x - cameraEye.x;
+  float fromEyeY = boid.position.y - cameraEye.y;
+  float fromEyeZ = boid.position.z - cameraEye.z;
+  float cameraDepth = fromEyeX * cameraForward.x
+      + fromEyeY * cameraForward.y
+      + fromEyeZ * cameraForward.z;
+
+  if (cameraDepth + BOID_VISUAL_RADIUS < CAMERA_NEAR_CLIP) return true;
+  if (cameraDepth - BOID_VISUAL_RADIUS > CAMERA_FAR_CLIP) return true;
+  // A boid whose center crossed the eye plane can still have a visible tip.
+  if (cameraDepth <= 0) return false;
+
+  float viewX = fromEyeX * cameraRight.x
+      + fromEyeY * cameraRight.y
+      + fromEyeZ * cameraRight.z;
+  float viewY = fromEyeX * cameraUp.x
+      + fromEyeY * cameraUp.y
+      + fromEyeZ * cameraUp.z;
+  float halfHeight = tan(radians(CAMERA_FOV * 0.5)) * cameraDepth;
+  float halfWidth = halfHeight * hologram.quiltSettings().viewAspect();
+
+  return abs(viewX) > halfWidth + BOID_VISUAL_RADIUS
+      || abs(viewY) > halfHeight + BOID_VISUAL_RADIUS;
+}
+
+void spawnBoidInView(Boid boid) {
+  float depthOffset = random(
+      -DEPTH_PLANE_DISTANCE * 0.72,
+      DEPTH_PLANE_DISTANCE * 0.72
+  );
+  float cameraDepth = cameraFocusDistance + depthOffset;
+  float halfHeight = tan(radians(CAMERA_FOV * 0.5)) * cameraDepth;
+  float halfWidth = halfHeight * hologram.quiltSettings().viewAspect();
+  float spawnX = random(
+      -max(1, halfWidth - BOID_VISUAL_RADIUS) * 0.88,
+      max(1, halfWidth - BOID_VISUAL_RADIUS) * 0.88
+  );
+  float spawnY = random(
+      -max(1, halfHeight - BOID_VISUAL_RADIUS) * 0.88,
+      max(1, halfHeight - BOID_VISUAL_RADIUS) * 0.88
+  );
+
+  setBoidViewPosition(boid, cameraDepth, spawnX, spawnY);
+  giveBoidRandomVelocity(boid);
+  boid.hasEnteredView = true;
+}
+
+void spawnBoidOutsideView(Boid boid) {
+  float depthOffset = random(
+      -DEPTH_PLANE_DISTANCE * 0.72,
+      DEPTH_PLANE_DISTANCE * 0.72
+  );
+  float cameraDepth = cameraFocusDistance + depthOffset;
+  float halfHeight = tan(radians(CAMERA_FOV * 0.5)) * cameraDepth;
+  float halfWidth = halfHeight * hologram.quiltSettings().viewAspect();
+  float outsideOffset = BOID_VISUAL_RADIUS + SPAWN_OUTSIDE_PADDING;
+  float spawnX;
+  float spawnY;
+
+  if (random(1) < 0.5) {
+    spawnX = random(1) < 0.5
+        ? -halfWidth - outsideOffset
+        : halfWidth + outsideOffset;
+    spawnY = random(-halfHeight * 0.82, halfHeight * 0.82);
+  } else {
+    spawnX = random(-halfWidth * 0.82, halfWidth * 0.82);
+    spawnY = random(1) < 0.5
+        ? -halfHeight - outsideOffset
+        : halfHeight + outsideOffset;
   }
-  if (abs(boid.position.z) > outerZ) {
-    boid.position.z = constrain(boid.position.z, -outerZ, outerZ);
-    boid.velocity.z *= -0.55;
+
+  setBoidViewPosition(boid, cameraDepth, spawnX, spawnY);
+  boid.ingressOffsetX = random(-halfWidth * 0.22, halfWidth * 0.22);
+  boid.ingressOffsetY = random(-halfHeight * 0.22, halfHeight * 0.22);
+  aimBoidAtFocalCenter(boid);
+  boid.hasEnteredView = false;
+}
+
+void setBoidViewPosition(Boid boid, float cameraDepth, float viewX, float viewY) {
+  boid.position.set(cameraEye);
+  boid.position.x += cameraForward.x * cameraDepth
+      + cameraRight.x * viewX + cameraUp.x * viewY;
+  boid.position.y += cameraForward.y * cameraDepth
+      + cameraRight.y * viewX + cameraUp.y * viewY;
+  boid.position.z += cameraForward.z * cameraDepth
+      + cameraRight.z * viewX + cameraUp.z * viewY;
+}
+
+void aimBoidAtFocalCenter(Boid boid) {
+  float aimX = cameraTarget.x - boid.position.x;
+  float aimY = cameraTarget.y - boid.position.y;
+  float aimZ = cameraTarget.z - boid.position.z;
+  float aimLength = sqrt(aimX * aimX + aimY * aimY + aimZ * aimZ);
+  if (aimLength < 0.0001) {
+    aimX = cameraForward.x;
+    aimY = cameraForward.y;
+    aimZ = cameraForward.z;
+    aimLength = 1;
   }
+
+  aimX /= aimLength;
+  aimY /= aimLength;
+  aimZ /= aimLength;
+  float sidewaysJitter = random(-0.32, 0.32);
+  float verticalJitter = random(-0.32, 0.32);
+  float depthJitter = random(-0.12, 0.12);
+  aimX += cameraRight.x * sidewaysJitter
+      + cameraUp.x * verticalJitter + cameraForward.x * depthJitter;
+  aimY += cameraRight.y * sidewaysJitter
+      + cameraUp.y * verticalJitter + cameraForward.y * depthJitter;
+  aimZ += cameraRight.z * sidewaysJitter
+      + cameraUp.z * verticalJitter + cameraForward.z * depthJitter;
+  float jitteredLength = sqrt(aimX * aimX + aimY * aimY + aimZ * aimZ);
+  float speed = random(1.0, boid.maxSpeed);
+  boid.velocity.set(
+      aimX / jitteredLength * speed,
+      aimY / jitteredLength * speed,
+      aimZ / jitteredLength * speed
+  );
+  boid.acceleration.set(0, 0, 0);
+}
+
+void giveBoidRandomVelocity(Boid boid) {
+  float velocityX;
+  float velocityY;
+  float velocityZ;
+  float lengthSq;
+  do {
+    velocityX = random(-1, 1);
+    velocityY = random(-1, 1);
+    velocityZ = random(-1, 1);
+    lengthSq = velocityX * velocityX + velocityY * velocityY + velocityZ * velocityZ;
+  } while (lengthSq < 0.001);
+
+  float speed = random(1.0, boid.maxSpeed) / sqrt(lengthSq);
+  boid.velocity.set(velocityX * speed, velocityY * speed, velocityZ * speed);
+  boid.acceleration.set(0, 0, 0);
 }
 
 void limit(PVector vector, float maximum) {
@@ -429,7 +605,7 @@ void drawOverlay(boolean pointerActive) {
 
 void resetFlock() {
   for (int i = 0; i < flock.length; i++) {
-    flock[i] = new Boid();
+    flock[i] = new Boid(false);
   }
 }
 
@@ -473,21 +649,18 @@ class Boid {
   float maxSpeed = random(2.15, 3.05);
   float maxForce = random(0.034, 0.058);
 
-  PVector position = new PVector(
-      random(-BOUNDS_X * 0.88, BOUNDS_X * 0.88),
-      random(-BOUNDS_Y * 0.88, BOUNDS_Y * 0.88),
-      random(-BOUNDS_Z * 0.88, BOUNDS_Z * 0.88)
-  );
-  PVector velocity = randomDirection();
+  PVector position = new PVector();
+  PVector velocity = new PVector();
   PVector acceleration = new PVector();
+  boolean hasEnteredView;
+  float ingressOffsetX;
+  float ingressOffsetY;
 
-  PVector randomDirection() {
-    PVector direction;
-    do {
-      direction = new PVector(random(-1, 1), random(-1, 1), random(-1, 1));
-    } while (direction.magSq() < 0.001);
-    direction.normalize();
-    direction.mult(random(1.0, maxSpeed));
-    return direction;
+  Boid(boolean startOutsideView) {
+    if (startOutsideView) {
+      spawnBoidOutsideView(this);
+    } else {
+      spawnBoidInView(this);
+    }
   }
 }
