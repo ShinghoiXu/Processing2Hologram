@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "io.github.shinghoixu"
-version = "0.1.3"
+version = "0.2.0"
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(17))

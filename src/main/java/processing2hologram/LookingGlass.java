@@ -16,7 +16,7 @@ import processing2hologram.internal.BridgeConnection;
  * {@link #render(SceneRenderer)}. The callback is repeated for every horizontal view.</p>
  */
 public final class LookingGlass implements AutoCloseable {
-  public static final String VERSION = "0.1.3";
+  public static final String VERSION = "0.2.0";
   public static final long FIRST_DISPLAY = 0xffff_ffffL;
 
   private static final float PORTRAIT_VIEW_CONE_DEGREES = 40f;

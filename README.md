@@ -1,6 +1,7 @@
 # Processing2Hologram
 
 [![Release](https://img.shields.io/github/v/release/ShinghoiXu/Processing2Hologram)](https://github.com/ShinghoiXu/Processing2Hologram/releases)
+[![Universal package](https://img.shields.io/badge/download-Universal%20Windows%20%2B%20macOS-6F42C1)](https://github.com/ShinghoiXu/Processing2Hologram/releases/latest)
 [![Processing 4](https://img.shields.io/badge/Processing-4-0468FF)](https://processing.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -35,30 +36,68 @@ Created and maintained by [Chengkai Xu](https://chengkaixu.art).
 
 ## Install
 
-Prebuilt packages are checked into [`build/releases`](https://github.com/ShinghoiXu/Processing2Hologram/tree/main/build/releases). Choose
-one package and copy its complete `Processing2Hologram` directory into your
-Processing Sketchbook's `libraries` directory:
+**Recommended: [open the latest GitHub Release](https://github.com/ShinghoiXu/Processing2Hologram/releases/latest),
+expand `Assets`, and download `Processing2Hologram.zip`.** This is the Universal
+package for both Windows and macOS; you do not need to choose an operating-system
+variant. Do not download GitHub's automatically generated `Source code` archives
+unless you intend to build the library yourself.
 
-| Package | Use it when |
-| --- | --- |
-| `build/releases/macos/Processing2Hologram` | Running Processing on macOS |
-| `build/releases/windows/Processing2Hologram` | Running Processing on Windows x64 |
-| `build/releases/universal/Processing2Hologram` | Sharing one installation between macOS and Windows |
+1. Quit Processing if it is running.
+2. Unzip `Processing2Hologram.zip`.
+3. Copy the complete extracted `Processing2Hologram` folder into the `libraries`
+   folder inside your Processing Sketchbook.
+4. Start Processing again.
 
-The package already contains the library JAR, native Bridge adapter, metadata,
-documentation, and examples; no compiler is required.
+The final directory layout must look like this:
 
-Restart Processing after installing or replacing the library.
+```text
+<Sketchbook>/
+  libraries/
+    Processing2Hologram/
+      library/
+        Processing2Hologram.jar
+      examples/
+      library.properties
+```
 
-To build an installable copy from this repository, see
-[Hacking on the library](#hacking-on-the-library). Install the complete
-`Processing2Hologram` directory from the platform-specific release output.
+If the extracted archive contains an extra outer folder, copy the inner
+`Processing2Hologram` folder shown above. Replace the complete old folder when
+updating; do not merge two versions.
 
-After restarting Processing, open either bundled example from:
+### Find your Processing Sketchbook folder
+
+Processing shows the authoritative path in its Preferences window:
+
+- Windows: `File > Preferences`
+- macOS: `Processing > Preferences`
+
+Read the **Sketchbook location** field, open that folder, then use or create its
+`libraries` subfolder. This method also works if you moved the Sketchbook away
+from its default location. See the official
+[Processing environment documentation](https://processing.org/environment/#preferences).
+
+The usual default installation targets are:
+
+```text
+Windows: C:\Users\<your-user-name>\Documents\Processing\libraries\Processing2Hologram
+macOS:   ~/Documents/Processing/libraries/Processing2Hologram
+```
+
+Do not put the library inside the Processing application's own installation
+directory. The downloaded Universal package already contains the library JAR,
+the Windows x64 native adapter, the macOS Apple silicon/Intel native adapter,
+metadata, documentation, and examples; no compiler is required.
+
+After restarting Processing, open any bundled example from:
 
 ```text
 File > Examples > Contributed Libraries > Processing2Hologram > Cube
 File > Examples > Contributed Libraries > Processing2Hologram > Flocking
+File > Examples > Contributed Libraries > Processing2Hologram > AuroraRibbons
+File > Examples > Contributed Libraries > Processing2Hologram > KineticBloom
+File > Examples > Contributed Libraries > Processing2Hologram > SolarSystem
+File > Examples > Contributed Libraries > Processing2Hologram > WaveGarden
+File > Examples > Contributed Libraries > Processing2Hologram > DepthPlayground
 ```
 
 Make sure Looking Glass Bridge is running before starting the sketch if you want
@@ -85,8 +124,47 @@ Boids are recycled one-for-one only after fully leaving the camera frustum;
 replacements fly in from beyond a random edge. Very gentle depth forces favor
 the space between two soft planes around the focal plane.
 
+### AuroraRibbons
+
+[`examples/AuroraRibbons`](examples/AuroraRibbons) draws layered procedural
+ribbons, stars, and traveling beads across a deep volume. It demonstrates
+transparent triangle strips, deterministic setup-time randomness, quilt saving,
+and the rule that animation state is advanced only once per frame. Press `Space`
+to pause and `S` to save the current quilt.
+
+### KineticBloom
+
+[`examples/KineticBloom`](examples/KineticBloom) is a mechanical flower made
+from lit Processing primitives. Its counter-rotating petal layers demonstrate
+materials, multiple light types, nested transforms, and animated geometry around
+the focal plane. Click to reverse its motion and press `Space` to pause.
+
+### SolarSystem
+
+[`examples/SolarSystem`](examples/SolarSystem) presents a stylized eight-planet
+solar system with an Earth-Moon pair, an asteroid belt, and layered Saturn rings.
+The ecliptic normal points upward with a slight diagonal lean, while the elevated
+camera gives the orbital plane the familiar oblique view used to display
+Saturn's rings. Press `Space` to pause, use `Up` and `Down` to change time speed,
+press `G` to toggle the ecliptic guide, `Q` to inspect the quilt, and `S` to save it.
+
+### WaveGarden
+
+[`examples/WaveGarden`](examples/WaveGarden) renders an interactive colored
+triangle-strip terrain with a wire overlay and floating light seeds. Move the
+mouse to send ripples across the surface; press `Space` to pause. The sketch
+caches the complete animated height field before rendering any quilt views.
+
+### DepthPlayground
+
+[`examples/DepthPlayground`](examples/DepthPlayground) is an interactive tunnel
+for exploring the library's depth controls. Move horizontally to change
+`camera().depthScale()` and vertically to spread the scene through depth. Press
+`M` to lock the current settings, `+` or `-` to change Bridge zoom, `Q` to inspect
+the quilt, `S` to save it, and `R` to reset.
+
 `QuiltDebug` is also included as a developer utility for displaying the complete
-quilt rather than as a third showcase example.
+quilt rather than as a showcase sketch.
 
 ## Your first holographic sketch
 
@@ -225,9 +303,10 @@ If the Processing preview works but the Looking Glass is blank or white:
    preview-only mode.
 2. Confirm Looking Glass Bridge is running and the device is enabled as a desktop
    display. For Portrait, its desktop resolution should be 1536 x 2048.
-3. Replace the complete installed library directory with the one from
-   `build/releases/macos` or `build/releases/windows`, then restart Processing.
-   Processing keeps the old JAR and native library loaded until restart.
+3. Download `Processing2Hologram.zip` again from the
+   [latest GitHub Release](https://github.com/ShinghoiXu/Processing2Hologram/releases/latest),
+   replace the complete installed `Processing2Hologram` folder, then restart
+   Processing. Processing keeps the old JAR and native library loaded until restart.
 4. Use version 0.1.1 or later. Version 0.1.0 could produce a white Bridge window
    on Windows because it submitted from JOGL's context.
 
@@ -251,7 +330,9 @@ For a custom Bridge installation, set the native library's absolute path with
 ## Hacking on the library
 
 This section is for contributors and anyone who wants to build or modify the
-Java/native implementation.
+Java/native implementation. Regular users should install the published Universal
+ZIP from [GitHub Releases](https://github.com/ShinghoiXu/Processing2Hologram/releases/latest)
+instead of using the build outputs below.
 
 ### Build from source
 
