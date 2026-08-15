@@ -21,10 +21,11 @@
 
 ---
 
-Processing2Hologram is a Processing 4 library for showing `P3D` scenes on
-Looking Glass displays. Draw a scene with familiar Processing commands; the
-library renders the required views, assembles the quilt, and sends it to Looking
-Glass Bridge.
+Processing2Hologram is a [Processing 4](https://processing.org/) library for
+showing `P3D` scenes on [Looking Glass](https://lookingglassfactory.com/)
+displays. Draw a scene with familiar Processing commands; the library renders
+the required views, assembles the quilt, and sends it to
+[Looking Glass Bridge](https://lookingglassfactory.com/software/looking-glass-bridge).
 
 If no display is connected, the same sketch still runs with a normal center-view
 preview and a full quilt preview. The first validated hardware target is Looking
