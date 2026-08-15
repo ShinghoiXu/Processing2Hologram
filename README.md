@@ -1,9 +1,25 @@
-# Processing2Hologram
+<div align="center">
+  <img src="docs/images/processing2hologram-banner.png" alt="Processing2Hologram" width="100%">
 
-[![Release](https://img.shields.io/github/v/release/ShinghoiXu/Processing2Hologram)](https://github.com/ShinghoiXu/Processing2Hologram/releases)
-[![Universal package](https://img.shields.io/badge/download-Universal%20Windows%20%2B%20macOS-6F42C1)](https://github.com/ShinghoiXu/Processing2Hologram/releases/latest)
-[![Processing 4](https://img.shields.io/badge/Processing-4-0468FF)](https://processing.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  <p><strong>Bring Processing P3D scenes to Looking Glass holographic displays.</strong></p>
+
+  <p>
+    <a href="https://github.com/ShinghoiXu/Processing2Hologram/releases"><img src="https://img.shields.io/github/v/release/ShinghoiXu/Processing2Hologram?style=flat-square" alt="Latest release"></a>
+    <a href="https://github.com/ShinghoiXu/Processing2Hologram/releases/latest"><img src="https://img.shields.io/badge/download-Windows%20%2B%20macOS-6F42C1?style=flat-square" alt="Download for Windows and macOS"></a>
+    <a href="https://processing.org/"><img src="https://img.shields.io/badge/Processing-4-0468FF?style=flat-square" alt="Processing 4"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F4C430?style=flat-square" alt="MIT license"></a>
+  </p>
+
+  <p>
+    <a href="#highlights">Highlights</a> ·
+    <a href="#install">Install</a> ·
+    <a href="#examples">Examples</a> ·
+    <a href="#your-first-holographic-sketch">Quick start</a> ·
+    <a href="#api-at-a-glance">API</a>
+  </p>
+</div>
+
+---
 
 Processing2Hologram is a Processing 4 library for showing `P3D` scenes on
 Looking Glass displays. Draw a scene with familiar Processing commands; the
@@ -28,11 +44,12 @@ Created and maintained by [Chengkai Xu](https://chengkaixu.art).
 
 ## Requirements
 
-- Windows 10 or 11 x64, or macOS 12 or later
-- Processing 4.4.6 or later
-- Looking Glass Bridge 2.6 or later
-- A Looking Glass connected in desktop mode for live holographic output
-- A sketch using the `P3D` renderer
+| Component | Requirement |
+| --- | --- |
+| Operating system | Windows 10/11 x64 or macOS 12+ |
+| Processing | 4.4.6 or later, using the `P3D` renderer |
+| Looking Glass Bridge | 2.6 or later |
+| Display | A Looking Glass in desktop mode for live holographic output |
 
 ## Install
 
@@ -105,6 +122,50 @@ live output on a display.
 
 ## Examples
 
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="examples/Cube"><img src="docs/images/cube.png" alt="Cube example" width="260"></a><br>
+      <sub><b>Cube</b> · minimal starting point</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/AuroraRibbons"><img src="docs/images/aurora-ribbons.png" alt="Aurora Ribbons example" width="260"></a><br>
+      <sub><b>Aurora Ribbons</b> · procedural layers</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/Flocking"><img src="docs/images/flocking.png" alt="Flocking example" width="260"></a><br>
+      <sub><b>Flocking</b> · interactive simulation</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="examples/KineticBloom"><img src="docs/images/kinetic-bloom.png" alt="Kinetic Bloom example" width="260"></a><br>
+      <sub><b>Kinetic Bloom</b> · lights and transforms</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/SolarSystem"><img src="docs/images/solar-system.png" alt="Solar System example" width="260"></a><br>
+      <sub><b>Solar System</b> · orbital depth</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/WaveGarden"><img src="docs/images/wave-garden.png" alt="Wave Garden example" width="260"></a><br>
+      <sub><b>Wave Garden</b> · interactive terrain</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="examples/DepthPlayground"><img src="docs/images/depth-playground.png" alt="Depth Playground example" width="260"></a><br>
+      <sub><b>Depth Playground</b> · depth controls</sub>
+    </td>
+    <td align="center" colspan="2">
+      <a href="examples/QuiltDebug"><img src="docs/images/quilt-debug.png" alt="Quilt Debug utility" width="520"></a><br>
+      <sub><b>Quilt Debug</b> · full multiview quilt inspection</sub>
+    </td>
+  </tr>
+</table>
+
+Each example is bundled with the library and can be opened from Processing's
+**File > Examples > Contributed Libraries > Processing2Hologram** menu.
+
 ### Cube
 
 [`examples/Cube`](examples/Cube) is the smallest complete starting point. It
@@ -124,7 +185,7 @@ Boids are recycled one-for-one only after fully leaving the camera frustum;
 replacements fly in from beyond a random edge. Very gentle depth forces favor
 the space between two soft planes around the focal plane.
 
-### AuroraRibbons
+### Aurora Ribbons
 
 [`examples/AuroraRibbons`](examples/AuroraRibbons) draws layered procedural
 ribbons, stars, and traveling beads across a deep volume. It demonstrates
@@ -132,14 +193,14 @@ transparent triangle strips, deterministic setup-time randomness, quilt saving,
 and the rule that animation state is advanced only once per frame. Press `Space`
 to pause and `S` to save the current quilt.
 
-### KineticBloom
+### Kinetic Bloom
 
 [`examples/KineticBloom`](examples/KineticBloom) is a mechanical flower made
 from lit Processing primitives. Its counter-rotating petal layers demonstrate
 materials, multiple light types, nested transforms, and animated geometry around
 the focal plane. Click to reverse its motion and press `Space` to pause.
 
-### SolarSystem
+### Solar System
 
 [`examples/SolarSystem`](examples/SolarSystem) presents a stylized eight-planet
 solar system with an Earth-Moon pair, an asteroid belt, and layered Saturn rings.
@@ -148,14 +209,14 @@ camera gives the orbital plane the familiar oblique view used to display
 Saturn's rings. Press `Space` to pause, use `Up` and `Down` to change time speed,
 press `G` to toggle the ecliptic guide, `Q` to inspect the quilt, and `S` to save it.
 
-### WaveGarden
+### Wave Garden
 
 [`examples/WaveGarden`](examples/WaveGarden) renders an interactive colored
 triangle-strip terrain with a wire overlay and floating light seeds. Move the
 mouse to send ripples across the surface; press `Space` to pause. The sketch
 caches the complete animated height field before rendering any quilt views.
 
-### DepthPlayground
+### Depth Playground
 
 [`examples/DepthPlayground`](examples/DepthPlayground) is an interactive tunnel
 for exploring the library's depth controls. Move horizontally to change
