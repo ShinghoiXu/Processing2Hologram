@@ -470,6 +470,35 @@ universal macOS dylib. The runtime selects the correct one automatically. Do not
 place separate macOS and Windows JARs together in the same Processing library;
 they contain duplicate Java classes.
 
+### Package the Release ZIP
+
+After building the universal distribution, create the GitHub Release asset with
+the repository's cross-platform packager:
+
+```powershell
+python .\scripts\package_release.py
+```
+
+or on macOS/Linux:
+
+```bash
+python3 ./scripts/package_release.py
+```
+
+This packages `build/releases/universal/Processing2Hologram` as
+`build/Processing2Hologram.zip`. The packager constructs ZIP entry names with
+forward slashes on every operating system, includes explicit directory entries,
+and reopens the finished archive to validate its paths, CRCs, top-level folder,
+and required Processing library layout. Do not use PowerShell `Compress-Archive`
+for the Release asset because its Windows-hosted output can contain backslashes
+in ZIP entry names.
+
+To validate an existing archive without rebuilding it, run:
+
+```bash
+python3 ./scripts/package_release.py --verify build/Processing2Hologram.zip
+```
+
 ### Verification
 
 The normal build runs the non-graphical checks. To additionally open a hidden
